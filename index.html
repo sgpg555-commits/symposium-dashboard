@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>심포지엄 관리 시스템 (최종 완성본)</title>
+    <title>심포지엄 관리 시스템</title>
     <style>
         body { font-family: 'Malgun Gothic', sans-serif; padding: 10px; background-color: #f4f7f6; margin: 0; }
         .control-panel { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 15px; }
@@ -12,13 +12,24 @@
         .card-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
         @media (max-width: 480px) { .card-container { grid-template-columns: 1fr; } }
         .card { background: white; border-radius: 15px; padding: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); position: relative; }
-        .card img { width: 100%; height: 180px; object-fit: cover; border-radius: 10px; margin-bottom: 10px; cursor: pointer; background: #eee; }
+        
+        /* 이미지 왜곡 방지 */
+        .card img { 
+            width: 100%; 
+            height: 180px; 
+            object-fit: contain; 
+            background-color: #f8f8f8; 
+            border-radius: 10px; 
+            margin-bottom: 10px; 
+            cursor: pointer; 
+        }
+        
         .del-btn { display: none; position: absolute; top: 10px; right: 10px; background: red; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; }
         .edit-mode .del-btn { display: block; }
         
         /* 팝업 모달 스타일 */
-        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
-        .modal.hidden { display: none; }
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: none; justify-content: center; align-items: center; }
+        .modal.show { display: flex; }
         .modal-content { background: white; padding: 20px; border-radius: 12px; display: flex; flex-direction: column; gap: 10px; width: 300px; }
     </style>
 </head>
@@ -29,7 +40,7 @@
 <div class="control-panel">
     <button onclick="toggleEditMode()">편집 모드 ON/OFF</button>
     <button onclick="toggleView()">보기 모드 전환</button>
-    <button onclick="openModal()" style="background:#007bff; color:white;">+ 새 심포지엄 등록</button>
+    <button onclick="openNewSympModal()" style="background:#007bff; color:white; font-weight:bold;">+ 새 심포지엄 등록</button>
     
     <div class="filter-group">
         <label>월별(다중): 
@@ -65,7 +76,7 @@
     </div>
 </div>
 
-<div id="addModal" class="modal hidden">
+<div id="addModal" class="modal">
     <div class="modal-content">
         <h3>새 심포지엄 등록</h3>
         <input type="text" id="newMonth" placeholder="월(6/7/9)">
@@ -73,11 +84,12 @@
         <input type="text" id="newProd" placeholder="제품명">
         <input type="text" id="newTitle" placeholder="제목">
         <button onclick="addNewCard()" style="background:#28a745; color:white;">등록하기</button>
-        <button onclick="closeModal()">닫기</button>
+        <button onclick="closeNewSympModal()">닫기</button>
     </div>
 </div>
 
 <div class="card-container" id="cardContainer">
+    <!-- 카드 데이터는 기존 유지 -->
     <div class="card" data-month="6" data-loc="힐리언스" data-prod="바로에젯"><button class="del-btn" onclick="this.parentElement.remove()">X</button><img src="https://img.healience.co.kr/upload/board/20221206/e6a9c0a3-3d11-4040-a853-8cd5d3a69b68.jpg" onclick="changeImage(this)"><h3>6/19~20 - 크레젯, 리토바젯, 바로에젯</h3><p>힐리언스 선마을</p></div>
     <div class="card" data-month="6" data-loc="소공동롯데" data-prod="펙수클루"><button class="del-btn" onclick="this.parentElement.remove()">X</button><img src="https://upload.wikimedia.org/wikipedia/commons/c/c9/Night_view_of_Euljiro_1-ga_intersection_and_the_Sogong-dong_Lotte_town.jpg" onclick="changeImage(this)"><h3>6/20~21 - 펙수클루</h3><p>소공동 롯데호텔</p></div>
     <div class="card" data-month="6" data-loc="풀만" data-prod="실리스칸"><button class="del-btn" onclick="this.parentElement.remove()">X</button><img src="https://lh3.googleusercontent.com/gps-cs-s/APNQkAHkIZtShHtGp8-e4hBsGED_5uol7aXwDMj9NTVvtw2mjIXShPxasHsm2YJQZnBCHZy-U28oQahH7_cFp93RgvDCVbjhOe30MKyA5w4ncw4AVZVjUDVrqyKdHm9dT_Q1LmbgkHQJB982rdFA=s680-w680-h510-rw" onclick="changeImage(this)"><h3>6/20~21 - 우루사, 실리스칸</h3><p>풀만 서울이스트폴</p></div>
@@ -106,8 +118,8 @@
 <script>
     function toggleEditMode() { document.getElementById('cardContainer').classList.toggle('edit-mode'); }
     function toggleView() { document.getElementById('cardContainer').classList.toggle('list-view'); }
-    function openModal() { document.getElementById('addModal').classList.remove('hidden'); }
-    function closeModal() { document.getElementById('addModal').classList.add('hidden'); }
+    function openNewSympModal() { document.getElementById('addModal').classList.add('show'); }
+    function closeNewSympModal() { document.getElementById('addModal').classList.remove('show'); }
     function changeImage(img) { const url = prompt("이미지 URL:", img.src); if(url) img.src = url; }
     
     function addNewCard() {
@@ -120,7 +132,7 @@
             div.className = 'card'; div.dataset.month=m; div.dataset.loc=l; div.dataset.prod=p;
             div.innerHTML = `<button class="del-btn" style="display:block" onclick="this.parentElement.remove()">X</button><img src="https://via.placeholder.com/300x200" onclick="changeImage(this)"><h3>${t}</h3><p>${l}</p>`;
             document.getElementById('cardContainer').appendChild(div);
-            closeModal();
+            closeNewSympModal();
         }
     }
     function applyFilters() {
