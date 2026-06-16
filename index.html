@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>심포지엄 관리 시스템 (최종 완성본)</title>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; padding: 10px; background-color: #f4f7f6; margin: 0; }
+        .control-panel { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 15px; }
+        .filter-group { margin-top: 10px; display: flex; flex-direction: column; gap: 10px; }
+        select, button, input { padding: 10px; font-size: 14px; border-radius: 8px; border: 1px solid #ddd; cursor: pointer; }
+        .card-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        @media (max-width: 480px) { .card-container { grid-template-columns: 1fr; } }
+        .card { background: white; border-radius: 15px; padding: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); position: relative; }
+        .card img { width: 100%; height: 180px; object-fit: cover; border-radius: 10px; margin-bottom: 10px; cursor: pointer; background: #eee; }
+        .del-btn { display: none; position: absolute; top: 10px; right: 10px; background: red; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; }
+        .edit-mode .del-btn { display: block; }
+        
+        /* 팝업 모달 스타일 */
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+        .modal.hidden { display: none; }
+        .modal-content { background: white; padding: 20px; border-radius: 12px; display: flex; flex-direction: column; gap: 10px; width: 300px; }
+    </style>
+</head>
+<body>
+
+<h2>심포지엄 관리 시스템</h2>
+
+<div class="control-panel">
+    <button onclick="toggleEditMode()">편집 모드 ON/OFF</button>
+    <button onclick="toggleView()">보기 모드 전환</button>
+    <button onclick="openModal()" style="background:#007bff; color:white;">+ 새 심포지엄 등록</button>
+    
+    <div class="filter-group">
+        <label>월별(다중): 
+            <input type="checkbox" class="f-month" value="6" onchange="applyFilters()"> 6월
+            <input type="checkbox" class="f-month" value="7" onchange="applyFilters()"> 7월
+            <input type="checkbox" class="f-month" value="9" onchange="applyFilters()"> 9월
+        </label>
+        <select id="f-loc" onchange="applyFilters()">
+            <option value="all">장소 전체</option>
+            <option value="힐리언스">힐리언스</option>
+            <option value="소공동롯데">소공동 롯데호텔</option>
+            <option value="잠실롯데">잠실 롯데호텔</option>
+            <option value="DMD">DMD</option>
+            <option value="풀만">풀만</option>
+            <option value="파르나스">파르나스</option>
+            <option value="워커힐">워커힐</option>
+            <option value="르메르디앙">르메르디앙</option>
+            <option value="노보텔">노보텔</option>
+            <option value="마곡">마곡</option>
+            <option value="히든클리프">히든클리프</option>
+        </select>
+        <select id="f-prod" onchange="applyFilters()">
+            <option value="all">제품 전체</option>
+            <option value="펙수클루">펙수클루</option>
+            <option value="실리스칸">실리스칸</option>
+            <option value="바로에젯">바로에젯</option>
+            <option value="엔블로">엔블로</option>
+            <option value="바이오탑">바이오탑</option>
+            <option value="릭시아나">릭시아나</option>
+            <option value="카트비피">카트비피</option>
+            <option value="기타">기타</option>
+        </select>
+    </div>
+</div>
+
+<div id="addModal" class="modal hidden">
+    <div class="modal-content">
+        <h3>새 심포지엄 등록</h3>
+        <input type="text" id="newMonth" placeholder="월(6/7/9)">
+        <input type="text" id="newLoc" placeholder="장소명">
+        <input type="text" id="newProd" placeholder="제품명">
+        <input type="text" id="newTitle" placeholder="제목">
+        <button onclick="addNewCard()" style="background:#28a745; color:white;">등록하기</button>
+        <button onclick="closeModal()">닫기</button>
+    </div>
+</div>
+
+<div class="card-container" id="cardContainer">
+    <div class="card" data-month="6" data-loc="힐리언스" data-prod="바로에젯"><button class="del-btn" onclick="this.parentElement.remove()">X</button><img src="https://img.healience.co.kr/upload/board/20221206/e6a9c0a3-3d11-4040-a853-8cd5d3a69b68.jpg" onclick="changeImage(this)"><h3>6/19~20 - 크레젯, 리토바젯, 바로에젯</h3><p>힐리언스 선마을</p></div>
+    <div class="card" data-month="6" data-loc="소공동롯데" data-prod="펙수클루"><button class="del-btn" onclick="this.parentElement.remove()">X</button><img src="https://upload.wikimedia.org/wikipedia/commons/c/c9/Night_view_of_Euljiro_1-ga_intersection_and_the_Sogong-dong_Lotte_town.jpg" onclick="changeImage(this)"><h3>6/20~21 - 펙수클루</h3><p>소공동 롯데호텔</p></div>
+    <div class="card" data-month="6" data-loc="풀만" data-prod="실리스칸"><button class="del-btn" onclick="this.parentElement.remove()">X</button><img src="https://lh3.googleusercontent.com/gps-cs-s/APNQkAHkIZtShHtGp8-e4hBsGED_5uol7aXwDMj9NTVvtw2mjIXShPxasHsm2YJQZnBCHZy-U28oQahH7_cFp93RgvDCVbjhOe30MKyA5w4ncw4AVZVjUDVrqyKdHm9dT_Q1LmbgkHQJB982rdFA=s680-w680-h510-rw" onclick="changeImage(this)"><h3>6/20~21 - 우루사, 실리스칸</h3><p>풀만 서울이스트폴</p></div>
+    <div class="card" data-month="6" data-loc="DMD" data-prod="엔블로"><button class="del-btn" onclick="this.parentElement.remove()">X</button><img src="https://lh3.googleusercontent.com/TgI4y8Koz4v_ikG8y_9w9EdWAWueCGcokbBMckQseEzKJ-Fu4048I-ut7Gg2a4Najs3DBAwIcOo1LZD0SGk3ByKgcvsoT44NW-vC5AtFFjnHpX4gsTuoEw=w800" onclick="changeImage(this)"><h3>6/20~21 - 펙수, 실리, 스토보, 엔블로</h3><p>DMD(대웅 경영개발원)</p></div>
+    <div class="card" data-month="6" data-loc="파르나스" data-prod="바로에젯"><button class="del-btn" onclick="this.parentElement.remove()">X</button><img src="https://img.hankyung.com/photo/202501/AD.39221225.1.jpg" onclick="changeImage(this)"><h3>6/20~21 - 세비카, 바로에젯, 엔블로</h3><p>웨스틴서울 파르나스</p></div>
+    <div class="card" data-month="6" data-loc="힐리언스" data-prod="바이오탑"><button class="del-btn" onclick="this.parentElement.remove()">X</button><img src="https://img.healience.co.kr/upload/board/20221206/e6a9c0a3-3d11-4040-a853-8cd5d3a69b68.jpg" onclick="changeImage(this)"><h3>6/20~21 - 바로에젯, 리토바젯, 바이오탑</h3><p>힐리언스 선마을</p></div>
+    <div class="card" data-month="6" data-loc="소공동롯데" data-prod="실리스칸"><button class="del-btn" onclick="this.parentElement.remove()">X</button><img src="https://upload.wikimedia.org/wikipedia/commons/c/c9/Night_view_of_Euljiro_1-ga_intersection_and_the_Sogong-dong_Lotte_town.jpg" onclick="changeImage(this)"><h3>6/27~28 - 실리스칸, 바로에젯</h3><p>소공동 롯데호텔</p></div>
+    <div class="card" data-month="6" data-loc="워커힐" data-prod="기타"><button class="del-btn" onclick="this.parentElement.remove()">X</button><img src="https://www.walkerhill.com/assets/hub/global/images/etc/allmenu_grand.jpg" onclick="changeImage(this)"><h3>6/27~28 - 신골팀</h3><p>워커힐</p></div>
+    <div class="card" data-month="6" data-loc="르메르디앙" data-prod="릭시아나"><button class="del-btn" onclick="this.parentElement.remove()">X</button><img src="https://i.namu.wiki/i/XiSjES1qyB1mYpzFhZnpakdia-CP8k31m8xtTrs_e5hj2C8AEr1VJG1gZOeC4Q36O74PMmqGE3k9KNhV4uzQqTm0L0PF3PQhpTYKM3TGPY5Rk4n31QDaxGW50g3JNvrbnLEfast4pKJ6HG7Dwaq7VQ.webp" onclick="changeImage(this)"><h3>6/27~28 - 릭시아나</h3><p>르메르디앙</p></div>
+    <div class="card" data-month="6" data-loc="힐리언스" data-prod="기타"><button class="del-btn" onclick="this.parentElement.remove()">X</button><img src="https://img.healience.co.kr/upload/board/20221206/e6a9c0a3-3d11-4040-a853-8cd5d3a69b68.jpg" onclick="changeImage(this)"><h3>6/27~28 - 내분비</h3><p>힐리언스 선마을</p></div>
+    <div class="card" data-month="7" data-loc="DMD" data-prod="카트비피"><button class="del-btn" onclick="this.parentElement.remove()">X</button><img src="https://lh3.googleusercontent.com/TgI4y8Koz4v_ikG8y_9w9EdWAWueCGcokbBMckQseEzKJ-Fu4048I-ut7Gg2a4Najs3DBAwIcOo1LZD0SGk3ByKgcvsoT44NW-vC5AtFFjnHpX4gsTuoEw=w800" onclick="changeImage(this)"><h3>7/4~5 - 카트비피, 씽크, 퍼즐AI</h3><p>DMD(대웅 경영개발원)</p></div>
+    <div class="card" data-month="7" data-loc="소공동롯데" data-prod="기타"><button class="del-btn" onclick="this.parentElement.remove()">X</button><img src="https://upload.wikimedia.org/wikipedia/commons/c/c9/Night_view_of_Euljiro_1-ga_intersection_and_the_Sogong-dong_Lotte_town.jpg" onclick="changeImage(this)"><h3>7/4~5 - 순환기1팀</h3><p>소공동 롯데호텔</p></div>
+    <div class="card" data-month="7" data-loc="힐리언스" data-prod="실리스칸"><button class="del-btn" onclick="this.parentElement.remove()">X</button><img src="https://img.healience.co.kr/upload/board/20221206/e6a9c0a3-3d11-4040-a853-8cd5d3a69b68.jpg" onclick="changeImage(this)"><h3>7/11~12 - 실리스칸</h3><p>힐리언스 선마을</p></div>
+    <div class="card" data-month="7" data-loc="노보텔" data-prod="기타"><button class="del-btn" onclick="this.parentElement.remove()">X</button><img src="https://m.ambatel.com/RES/PRODUCT/202402/nag_750_420_20200103085905_20240227141626.jpg" onclick="changeImage(this)"><h3>7/11~12 - 디헬3팀</h3><p>노보텔 강남</p></div>
+    <div class="card" data-month="7" data-loc="마곡" data-prod="기타"><button class="del-btn" onclick="this.parentElement.remove()">X</button><img src="https://flexible.img.hani.co.kr/flexible/normal/631/416/imgdb/original/2024/0402/20240402502258.webp" onclick="changeImage(this)"><h3>7/11~12 - 더스피로킷</h3><p>마곡센터</p></div>
+    <div class="card" data-month="7" data-loc="파르나스" data-prod="기타"><button class="del-btn" onclick="this.parentElement.remove()">X</button><img src="https://img.hankyung.com/photo/202501/AD.39221225.1.jpg" onclick="changeImage(this)"><h3>7/11~12 - 스토보클로</h3><p>웨스틴서울 파르나스</p></div>
+    <div class="card" data-month="7" data-loc="DMD" data-prod="기타"><button class="del-btn" onclick="this.parentElement.remove()">X</button><img src="https://lh3.googleusercontent.com/TgI4y8Koz4v_ikG8y_9w9EdWAWueCGcokbBMckQseEzKJ-Fu4048I-ut7Gg2a4Najs3DBAwIcOo1LZD0SGk3ByKgcvsoT44NW-vC5AtFFjnHpX4gsTuoEw=w800" onclick="changeImage(this)"><h3>7/11~12 - 이스미젠, 페라미, 엘도스</h3><p>DMD(대웅 경영개발원)</p></div>
+    <div class="card" data-month="7" data-loc="잠실롯데" data-prod="기타"><button class="del-btn" onclick="this.parentElement.remove()">X</button><img src="https://pds.joongang.co.kr/news/component/htmlphoto_mmdata/202411/29/f1ee6d00-6259-481f-ad97-f74a73c0bd74.jpg" onclick="changeImage(this)"><h3>7/18~19 - 써지컬팀</h3><p>잠실 롯데호텔</p></div>
+    <div class="card" data-month="7" data-loc="DMD" data-prod="펙수클루"><button class="del-btn" onclick="this.parentElement.remove()">X</button><img src="https://lh3.googleusercontent.com/TgI4y8Koz4v_ikG8y_9w9EdWAWueCGcokbBMckQseEzKJ-Fu4048I-ut7Gg2a4Najs3DBAwIcOo1LZD0SGk3ByKgcvsoT44NW-vC5AtFFjnHpX4gsTuoEw=w800" onclick="changeImage(this)"><h3>7/18~19 - 펙수클루</h3><p>DMD(대웅 경영개발원)</p></div>
+    <div class="card" data-month="7" data-loc="파르나스" data-prod="기타"><button class="del-btn" onclick="this.parentElement.remove()">X</button><img src="https://img.hankyung.com/photo/202501/AD.39221225.1.jpg" onclick="changeImage(this)"><h3>7/18~19 - 순환기1팀</h3><p>웨스틴서울 파르나스</p></div>
+    <div class="card" data-month="7" data-loc="힐리언스" data-prod="기타"><button class="del-btn" onclick="this.parentElement.remove()">X</button><img src="https://img.healience.co.kr/upload/board/20221206/e6a9c0a3-3d11-4040-a853-8cd5d3a69b68.jpg" onclick="changeImage(this)"><h3>7/25~26 - 마케팅1팀</h3><p>힐리언스 선마을</p></div>
+    <div class="card" data-month="7" data-loc="파르나스" data-prod="기타"><button class="del-btn" onclick="this.parentElement.remove()">X</button><img src="https://img.hankyung.com/photo/202501/AD.39221225.1.jpg" onclick="changeImage(this)"><h3>7/25~26 - 써지컬팀</h3><p>웨스틴서울 파르나스</p></div>
+    <div class="card" data-month="9" data-loc="히든클리프" data-prod="기타"><button class="del-btn" onclick="this.parentElement.remove()">X</button><img src="https://www.hiddencliff.kr/images/main/new_photo3.jpg" onclick="changeImage(this)"><h3>9/5~6 - 기타</h3><p>히든클리프 제주</p></div>
+</div>
+
+<script>
+    function toggleEditMode() { document.getElementById('cardContainer').classList.toggle('edit-mode'); }
+    function toggleView() { document.getElementById('cardContainer').classList.toggle('list-view'); }
+    function openModal() { document.getElementById('addModal').classList.remove('hidden'); }
+    function closeModal() { document.getElementById('addModal').classList.add('hidden'); }
+    function changeImage(img) { const url = prompt("이미지 URL:", img.src); if(url) img.src = url; }
+    
+    function addNewCard() {
+        const m = document.getElementById('newMonth').value;
+        const l = document.getElementById('newLoc').value;
+        const p = document.getElementById('newProd').value;
+        const t = document.getElementById('newTitle').value;
+        if(m && l && p && t) {
+            const div = document.createElement('div');
+            div.className = 'card'; div.dataset.month=m; div.dataset.loc=l; div.dataset.prod=p;
+            div.innerHTML = `<button class="del-btn" style="display:block" onclick="this.parentElement.remove()">X</button><img src="https://via.placeholder.com/300x200" onclick="changeImage(this)"><h3>${t}</h3><p>${l}</p>`;
+            document.getElementById('cardContainer').appendChild(div);
+            closeModal();
+        }
+    }
+    function applyFilters() {
+        const m = Array.from(document.querySelectorAll('.f-month:checked')).map(c => c.value);
+        const l = document.getElementById('f-loc').value;
+        const p = document.getElementById('f-prod').value;
+        document.querySelectorAll('.card').forEach(c => {
+            const matchM = m.length === 0 || m.includes(c.dataset.month);
+            const matchL = l === 'all' || c.dataset.loc === l;
+            const matchP = p === 'all' || c.dataset.prod === p;
+            c.classList.toggle('hidden', !(matchM && matchL && matchP));
+        });
+    }
+</script>
+</body>
+</html>
